@@ -89,4 +89,12 @@ public class PacketFactory {
         byte[] data = Files.readAllBytes(path);
         md5 = MessageDigest.getInstance("MD5").digest(data);
     }
+
+    public short getTransmissionId() {
+        return transmissionId;
+    }
+
+    public int getExpectedAckSequenceNr() {
+        return currentSequenceNumber - 1;
+    }
 }
