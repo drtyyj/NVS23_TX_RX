@@ -62,7 +62,7 @@ public class ClientMain {
                 buf = manager.fillBuffer();
                 Thread.sleep(0, sleep);
             } while(buf.length > 0);
-            buf = new byte[65000];
+            buf = new byte[64994];
             return "File sent";
         } catch (Exception e) {
                 return "Transmission error: " + e.getMessage();
