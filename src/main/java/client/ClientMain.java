@@ -15,7 +15,7 @@ public class ClientMain {
 
     public ClientMain() throws UnknownHostException {
         address = InetAddress.getByName("localhost");
-        buf = new byte[65000];
+        buf = new byte[64994];
     }
 
     public String processSendRequest(String[] input) {
@@ -88,8 +88,8 @@ public class ClientMain {
         int returnSize = Integer.parseUnsignedInt(size);
         if(returnSize <= 0)
            throw new InvalidParameterException("Invalid Input");
-        if(returnSize > 65000)
-            throw new InvalidParameterException("Data Packet Size mustn't exceed 65000 Bytes");
+        if(returnSize > 64994)
+            throw new InvalidParameterException("Data Packet Size mustn't exceed 64994 Bytes");
         return returnSize;
     }
 

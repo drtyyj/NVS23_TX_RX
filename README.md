@@ -17,9 +17,10 @@ quit
 quits the program and terminates the receiver.
 
 ```bash
-send filename [-p portNumber] [-d dataPacketSize]					
+send filename [-p portNumber] [-d dataPacketSize] [-s sleepTime]				
 ```
-Send file with given destinationport (4445 default) and datapacketsize (260 Bytes by default).
+Send file with given destination portNumber (4445 default), dataPacketSize (1000 Bytes by default, 64994 max).
+and sleepTime between sending packages (5 ns default).
 
 _NOTE_ 
 The file must be in a folder called "input" located at same height as the root folder (So right outside of the project). Similarly, the received files will be stored in an "output" folder.
