@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.InvalidParameterException;
+import java.util.Arrays;
 
 public class ClientMain {
     private DatagramSocket socket;
@@ -47,17 +48,24 @@ public class ClientMain {
         return sendData(fileName, port, dataPacketSize);
     }
 
-    public String sendData(String filename, int port, int dataPacketSize) {
+    public String sendData(String filename, int targetPort, int dataPacketSize) {
         try {
-            socket = new DatagramSocket();
+            socket = new DatagramSocket(4440);
+            socket.setSoTimeout(1000);
             TransmissionManager manager = new TransmissionManager("../input/" + filename, dataPacketSize);
-            buf = manager.fillBuffer();
+            int length = manager.fillBuffer(buf);
             do{
-                DatagramPacket packet = new DatagramPacket(buf, buf.length, address, port);
-                socket.send(packet);
-                buf = manager.fillBuffer();
-            } while(buf.length > 0);
-            buf = new byte[1028];
+                DatagramPacket dataPacket = new DatagramPacket(buf, length, address, targetPort);
+                socket.send(dataPacket);
+
+                /*
+                DatagramPacket ackPacket = new DatagramPacket(buf, 0, 6);
+                socket.receive(ackPacket);
+                manager.processAck(Arrays.copyOf(ackPacket.getData(), ackPacket.getLength()));
+                */
+                length = manager.fillBuffer(buf);
+            } while(length > 0);
+            Arrays.fill(buf, (byte) 0);
             return "File sent";
         } catch (Exception e) {
                 return "Transmission error: " + e.getMessage();

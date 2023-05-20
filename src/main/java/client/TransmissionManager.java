@@ -18,11 +18,17 @@ public class TransmissionManager {
         }
     }
 
-    public byte[] fillBuffer() throws IOException {
+    public int fillBuffer(byte[] buf) throws IOException {
         try{
-            return factory.getPacket();
+            byte[] packet = factory.getPacket();
+            System.arraycopy(packet, 0, buf, 0, packet.length);
+            return packet.length;
         } catch(NullPointerException e) {
             throw new RuntimeException("Cannot create Packets, no active Transmission.");
         }
+    }
+
+    public void processAck(byte[] ack) {
+
     }
 }
