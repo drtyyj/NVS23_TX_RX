@@ -21,9 +21,9 @@ public class ReceptionManager {
 
     protected void processReceivedData(byte[] data) throws IOException, NoSuchAlgorithmException {
         short transmissionId = processing.getBytesAsShort(data, 0, 2);
-        if(data.length > 1028) {
+        if(data.length > 65000) {
             activeTransmissions.remove(transmissionId);
-            throw new IOException("Packet size exceeds maximum size of 1028");
+            throw new IOException("Packet size exceeds maximum size of 65000 Bytes");
         }
         int sequenceNumber = processing.getBytesAsInt(data, 2, 4);
         Transmission transmission = null;

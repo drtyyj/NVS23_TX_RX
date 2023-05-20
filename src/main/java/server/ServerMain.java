@@ -23,7 +23,7 @@ public class ServerMain implements Runnable {
         System.out.println("Server listening to port " + port);
         while (running) {
             try {
-                buf = new byte[1028];
+                buf = new byte[65000];
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
                 manager.processReceivedData(Arrays.copyOf(packet.getData(), packet.getLength()));
