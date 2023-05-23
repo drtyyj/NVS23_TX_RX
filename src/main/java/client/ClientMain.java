@@ -1,11 +1,9 @@
 package client;
 
 import java.io.File;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.security.InvalidParameterException;
+import java.util.Arrays;
 
 public class ClientMain {
     private DatagramSocket socket;
@@ -51,18 +49,35 @@ public class ClientMain {
         return sendData(fileName, port, dataPacketSize, sleep);
     }
 
-    public String sendData(String filename, int port, int dataPacketSize, int sleep) {
+    public String sendData(String filename, int targetPort, int dataPacketSize, int sleep) {
         try {
-            socket = new DatagramSocket();
+            socket = new DatagramSocket(4440);
+            socket.setSoTimeout(1000);
+            int transmissionAttempts = 0;
+
             TransmissionManager manager = new TransmissionManager("../input/" + filename, dataPacketSize);
-            buf = manager.fillBuffer();
+            DatagramPacket ackPacket = new DatagramPacket(buf, 0, 6);
+            int length = manager.fillBuffer(buf);
             do{
-                DatagramPacket packet = new DatagramPacket(buf, buf.length, address, port);
-                socket.send(packet);
-                buf = manager.fillBuffer();
-                Thread.sleep(0, sleep);
-            } while(buf.length > 0);
-            buf = new byte[64994];
+                if(transmissionAttempts == 0) {
+                    Thread.sleep(0, sleep);
+                    DatagramPacket dataPacket = new DatagramPacket(buf, length, address, targetPort);
+                    socket.send(dataPacket);
+                }
+
+                try {
+                    socket.receive(ackPacket);
+                    manager.processAck(Arrays.copyOf(ackPacket.getData(), ackPacket.getLength()));
+                    transmissionAttempts = 0;
+                } catch(SocketTimeoutException e) {
+                    transmissionAttempts++;
+                    if(transmissionAttempts >= 5)
+                        throw new RuntimeException("Maximum amount of transmission attempts for packet reached, aborting transmission");
+                    continue;
+                }
+                length = manager.fillBuffer(buf);
+            } while(length > 0);
+            Arrays.fill(buf, (byte) 0);
             return "File sent";
         } catch (Exception e) {
                 return "Transmission error: " + e.getMessage();
