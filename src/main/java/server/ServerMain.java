@@ -27,6 +27,7 @@ public class ServerMain implements Runnable {
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
                 manager.processReceivedData(Arrays.copyOf(packet.getData(), packet.getLength()));
+                socket.send(new DatagramPacket(packet.getData(), 6, packet.getAddress(), packet.getPort()));
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
