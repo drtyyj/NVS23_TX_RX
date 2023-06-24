@@ -9,6 +9,7 @@ public class ClientMain {
     private DatagramSocket socket;
     private final InetAddress address;
 
+    private Boolean awaitAck = true;
     byte[] buf;
 
     public ClientMain() throws UnknownHostException {
@@ -65,15 +66,17 @@ public class ClientMain {
                     socket.send(dataPacket);
                 }
 
-                try {
-                    socket.receive(ackPacket);
-                    manager.processAck(Arrays.copyOf(ackPacket.getData(), ackPacket.getLength()));
-                    transmissionAttempts = 0;
-                } catch(SocketTimeoutException e) {
-                    transmissionAttempts++;
-                    if(transmissionAttempts >= 5)
-                        throw new RuntimeException("Maximum amount of transmission attempts for packet reached, aborting transmission");
-                    continue;
+                if(awaitAck) {
+                    try {
+                        socket.receive(ackPacket);
+                        manager.processAck(Arrays.copyOf(ackPacket.getData(), ackPacket.getLength()));
+                        transmissionAttempts = 0;
+                    } catch (SocketTimeoutException e) {
+                        transmissionAttempts++;
+                        if (transmissionAttempts >= 5)
+                            throw new RuntimeException("Maximum amount of transmission attempts for packet reached, aborting transmission");
+                        continue;
+                    }
                 }
                 length = manager.fillBuffer(buf);
             } while(length > 0);
@@ -115,5 +118,9 @@ public class ClientMain {
         if(returnSleep > 1000000)
             throw new InvalidParameterException("Sleep time cannot be bigger than 1ms");
         return returnSleep;
+    }
+
+    public void setAwaitAck(Boolean awaitAck) {
+        this.awaitAck = awaitAck;
     }
 }

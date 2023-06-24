@@ -10,6 +10,9 @@ public class ServerMain implements Runnable {
     private final DatagramSocket socket;
     private boolean running;
     private final ReceptionManager manager;
+
+    private Boolean awaitAck = true;
+
     byte[] buf;
 
     public ServerMain(int port) throws SocketException {
@@ -27,7 +30,9 @@ public class ServerMain implements Runnable {
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
                 manager.processReceivedData(Arrays.copyOf(packet.getData(), packet.getLength()));
-                socket.send(new DatagramPacket(packet.getData(), 6, packet.getAddress(), packet.getPort()));
+                if(awaitAck) {
+                    socket.send(new DatagramPacket(packet.getData(), 6, packet.getAddress(), packet.getPort()));
+                }
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
@@ -38,5 +43,9 @@ public class ServerMain implements Runnable {
         running = false;
         socket.close();
         System.out.println("Server closed");
+    }
+
+    public void setAwaitAck(Boolean awaitAck) {
+        this.awaitAck = awaitAck;
     }
 }
