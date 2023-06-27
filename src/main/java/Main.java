@@ -3,6 +3,7 @@ import server.ServerMain;
 
 import java.util.Scanner;
 
+
 public class Main {
     private static boolean running;
     private static ClientMain client;
@@ -12,7 +13,8 @@ public class Main {
     public static void main(String[] args) {
         init(args);
         while(running) {
-            System.out.println("Waiting for Input ('quit' or 'send file.* [-p portNumber] [-d dataPacketSize] [-s sleepTime]'):");
+            System.out.println("Waiting for Input ('quit' or 'send file.* [-p portNumber] [-d dataPacketSize] [-s sleepTime]'");
+            System.out.println("or 'enableack'/'disableack'):");
             String[] input = scanner.nextLine().split(" ");
             switch (input[0]) {
                 case "quit":
@@ -20,6 +22,14 @@ public class Main {
                     break;
                 case "send":
                     System.out.println(client.processSendRequest(input));
+                    break;
+                case "enableack":
+                    client.setAwaitAck(true);
+                    server.setAwaitAck(true);
+                    break;
+                case "disableack":
+                    client.setAwaitAck(false);
+                    server.setAwaitAck(false);
                     break;
                 default:
                     System.out.println("Invalid Input");
