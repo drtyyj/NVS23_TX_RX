@@ -4,29 +4,51 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public class Transmission {
 
     private final int maxSeqNumber;
+    private int fileSeqNumber;
     private final String fileName;
     private final List<byte[]> fileData;
+
+    // TreeMap is sorted by key
+    private TreeMap<Integer, byte[]> windowBuffer;
+    private final int windowSize;
     private byte[] md5;
 
-    public Transmission(int maxSeqNumber, String fileName) {
+    public Transmission(int maxSeqNumber, String fileName, int windowSize) {
         fileData = new ArrayList<>();
         this.maxSeqNumber = maxSeqNumber;
+        fileSeqNumber = 0;
         this.fileName = fileName;
+        this.windowSize = windowSize;
+        windowBuffer = new TreeMap<>();
     }
 
     public int getMaxSeqNumber() {
         return maxSeqNumber;
     }
 
-    public void putData(int sequenceNumber, byte[] data) {
-        fileData.add(sequenceNumber, data);
+    public int putData(int sequenceNumber, byte[] data) {
+
+        windowBuffer.put(sequenceNumber, data);
+
+        if(windowBuffer.size() == windowSize || sequenceNumber == maxSeqNumber) {
+            for(Map.Entry<Integer, byte[]> fragment : windowBuffer.entrySet()) {
+                if (fragment.getKey() - fileSeqNumber <= 1) {
+                    fileData.add(fragment.getKey(), fragment.getValue());
+                    fileSeqNumber = fragment.getKey();
+                    //windowBuffer.remove(fragment.getKey());
+                } else {
+                    break;
+                }
+            }
+            windowBuffer.clear();
+            return fileSeqNumber;
+        }
+        return 0;
     }
 
     public void setMd5(byte[] md5) {

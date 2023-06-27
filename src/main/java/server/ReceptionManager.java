@@ -14,13 +14,16 @@ public class ReceptionManager {
     private final PacketProcessing processing = new PacketProcessing();
 
     private final Map<Short, Transmission> activeTransmissions;
+    private int windowSize;
 
-    protected ReceptionManager() {
+    protected ReceptionManager(int windowSize) {
         activeTransmissions = new HashMap<>();
+        this.windowSize = windowSize;
     }
 
-    protected void processReceivedData(byte[] data) throws IOException, NoSuchAlgorithmException {
+    protected int processReceivedData(byte[] data) throws IOException, NoSuchAlgorithmException {
         short transmissionId = processing.getBytesAsShort(data, 0, 2);
+        int fileSequenceNumber = 0;
         if(data.length > 65000) {
             activeTransmissions.remove(transmissionId);
             throw new IOException("Packet size exceeds maximum size of 65000 Bytes");
@@ -30,7 +33,7 @@ public class ReceptionManager {
         if(sequenceNumber == 0) {
              int maxSequenceNr = processing.getBytesAsInt(data, 6, 4);
              String fileName = processing.getBytesAsString(data, 10, data.length - 10);
-             transmission = new Transmission(maxSequenceNr, fileName);
+             transmission = new Transmission(maxSequenceNr, fileName, windowSize);
              activeTransmissions.put(transmissionId, transmission);
         } else if(activeTransmissions.containsKey(transmissionId)) {
             transmission = activeTransmissions.get(transmissionId);
@@ -39,15 +42,20 @@ public class ReceptionManager {
             }
         }
         if(transmission != null) {
-            transmission.putData(sequenceNumber, Arrays.copyOfRange(data,6, data.length));
+            fileSequenceNumber = transmission.putData(sequenceNumber, Arrays.copyOfRange(data,6, data.length));
             if(transmission.isComplete()) {
                 transmission.makeFile();
                 deleteTransmission(transmissionId);
             }
         }
+        return fileSequenceNumber;
     }
 
     protected void deleteTransmission(short transmissionId) {
         activeTransmissions.remove(transmissionId);
+    }
+
+    protected void setWindowSize(int windowSize) {
+        this.windowSize = windowSize;
     }
 }
