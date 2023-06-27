@@ -14,12 +14,13 @@ public class ServerMain implements Runnable {
 
     private Boolean awaitAck = true;
 
-    private int windowSize = 10;
+    private int windowSize;
 
     byte[] buf;
 
-    public ServerMain(int port) throws SocketException {
+    public ServerMain(int port, int windowSize) throws SocketException {
         this.port = port;
+        this.windowSize = windowSize;
         running = true;
         socket = new DatagramSocket(port);
         manager = new ReceptionManager(windowSize);
@@ -61,5 +62,10 @@ public class ServerMain implements Runnable {
 
     public void setAwaitAck(Boolean awaitAck) {
         this.awaitAck = awaitAck;
+    }
+
+    public void setWindowSize(int windowSize) {
+        this.windowSize = windowSize;
+        manager.setWindowSize(windowSize);
     }
 }

@@ -10,11 +10,14 @@ public class Main {
     private static ServerMain server;
     private static Scanner scanner;
 
+    private static int windowSize = 10;
+
     public static void main(String[] args) {
         init(args);
         while(running) {
             System.out.println("Waiting for Input ('quit' or 'send file.* [-p portNumber] [-d dataPacketSize] [-s sleepTime]'");
-            System.out.println("or 'enableack'/'disableack'):");
+            System.out.println("or 'enableack'/'disableack'");
+            System.out.println("or 'windowsize <value>'):");
             String[] input = scanner.nextLine().split(" ");
             switch (input[0]) {
                 case "quit":
@@ -30,6 +33,11 @@ public class Main {
                 case "disableack":
                     client.setAwaitAck(false);
                     server.setAwaitAck(false);
+                    break;
+                case "windowsize":
+                    windowSize = Integer.parseInt(input[1]);
+                    client.setWindowSize(windowSize);
+                    server.setWindowSize(windowSize);
                     break;
                 default:
                     System.out.println("Invalid Input");
@@ -47,8 +55,8 @@ public class Main {
         try {
             running = true;
             scanner = new Scanner(System.in);
-            client = new ClientMain();
-            server = new ServerMain(listeningPort);
+            client = new ClientMain(windowSize);
+            server = new ServerMain(listeningPort, windowSize);
             Thread thread = new Thread(server);
             thread.start();
         } catch (Exception e) {

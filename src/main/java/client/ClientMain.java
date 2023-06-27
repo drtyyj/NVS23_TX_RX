@@ -22,16 +22,16 @@ public class ClientMain {
     private int transmissionAttempts;
     private int windowSize;
 
-    public ClientMain() throws UnknownHostException {
+    public ClientMain(int windowSize) throws UnknownHostException {
         address = InetAddress.getByName("localhost");
         buf = new byte[64994];
+        this.windowSize = windowSize;
     }
 
     public String processSendRequest(String[] input) {
         port = 4445;
         dataPacketSize = 1000;
         sleep = 5;
-        windowSize = 10;
         if(input.length == 1)
             return "Invalid Input: Missing name of file to be sent.";
         if(invalidFileName(input[1]))
@@ -145,5 +145,9 @@ public class ClientMain {
 
     public void setAwaitAck(Boolean awaitAck) {
         this.awaitAck = awaitAck;
+    }
+
+    public void setWindowSize(int windowSize) {
+        this.windowSize = windowSize;
     }
 }
