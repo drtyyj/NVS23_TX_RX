@@ -15,7 +15,8 @@ public class Main {
     public static void main(String[] args) {
         init(args);
         while(running) {
-            System.out.println("Waiting for Input ('quit' or 'send file.* [-p portNumber] [-d dataPacketSize] [-s sleepTime]'");
+            System.out.println("Waiting for Input ('quit' or 'send file.* [-p portNumber] ");
+            System.out.println("[-h ip] [-d dataPacketSize] [-s sleepTime]'");
             System.out.println("or 'enableack'/'disableack'");
             System.out.println("or 'windowsize <value>'):");
             String[] input = scanner.nextLine().split(" ");
@@ -55,7 +56,7 @@ public class Main {
         try {
             running = true;
             scanner = new Scanner(System.in);
-            client = new ClientMain(windowSize);
+            client = new ClientMain(windowSize, "localhost");
             server = new ServerMain(listeningPort, windowSize);
             Thread thread = new Thread(server);
             thread.start();

@@ -12,7 +12,7 @@ public class ClientMain {
 
     private TransmissionManager manager;
     private DatagramSocket socket;
-    private final InetAddress address;
+    private InetAddress address;
 
     private Boolean awaitAck = true;
     private final byte[] buf;
@@ -22,8 +22,8 @@ public class ClientMain {
     private int transmissionAttempts;
     private int windowSize;
 
-    public ClientMain(int windowSize) throws UnknownHostException {
-        address = InetAddress.getByName("localhost");
+    public ClientMain(int windowSize, String address) throws UnknownHostException {
+        this.address = InetAddress.getByName(address);
         buf = new byte[64994];
         this.windowSize = windowSize;
     }
@@ -49,6 +49,9 @@ public class ClientMain {
                     case "-s":
                         sleep = processSleep(input[i+1]);
                         break;
+                    case "-h":
+                        address = InetAddress.getByName(input[i+1]);
+                        break;
                     default:
                         return "Invalid Input";
                 }
@@ -64,6 +67,7 @@ public class ClientMain {
     public String sendData(String filename) {
         try {
             socket = new DatagramSocket(4440);
+
             socket.setSoTimeout(1000);
             transmissionAttempts = 0;
             boolean finished;
@@ -150,4 +154,5 @@ public class ClientMain {
     public void setWindowSize(int windowSize) {
         this.windowSize = windowSize;
     }
+
 }
