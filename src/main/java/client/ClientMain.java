@@ -20,6 +20,7 @@ public class ClientMain {
     private int dataPacketSize;
     private int sleep;
     private int transmissionAttempts;
+    private int windowSize;
 
     public ClientMain() throws UnknownHostException {
         address = InetAddress.getByName("localhost");
@@ -30,6 +31,7 @@ public class ClientMain {
         port = 4445;
         dataPacketSize = 1000;
         sleep = 5;
+        windowSize = 10;
         if(input.length == 1)
             return "Invalid Input: Missing name of file to be sent.";
         if(invalidFileName(input[1]))
@@ -64,24 +66,23 @@ public class ClientMain {
             socket = new DatagramSocket(4440);
             socket.setSoTimeout(1000);
             transmissionAttempts = 0;
-
-            manager = new TransmissionManager("../input/" + filename, dataPacketSize);
-            int length = manager.fillBuffer(buf);
+            boolean finished;
+            manager = new TransmissionManager("../input/" + filename, dataPacketSize, windowSize);
             do{
-                sendPacket(length);
+                finished = sendPackets();
                 if(awaitAck) {
                     try {
-                        receiveAck();
+                        finished = receiveAck();
                     } catch (SocketTimeoutException e) {
+                        manager.resetWindow();
+                        finished = false;
                         transmissionAttempts++;
                         if (transmissionAttempts >= 5)
                             throw TransmissionException.maxAttempts();
-                        continue;
                     }
-                }
-                if(transmissionAttempts == 0)
-                    length = manager.fillBuffer(buf);
-            } while(length > 0);
+                } else
+                    manager.loadNextWindow();
+            } while(!finished);
             Arrays.fill(buf, (byte) 0);
             return "File sent";
         } catch (Exception e) {
@@ -93,17 +94,24 @@ public class ClientMain {
         }
     }
 
-    private void sendPacket(int length) throws InterruptedException, IOException {
-        Thread.sleep(0, sleep);
-        DatagramPacket dataPacket = new DatagramPacket(buf, length, address, port);
-        socket.send(dataPacket);
+    private boolean sendPackets() throws InterruptedException, IOException {
+        for(int i = 0; i < windowSize; i++) {
+            int length = manager.fillBuffer(buf);
+            if(length == 0) {
+                return true;
+            }
+            Thread.sleep(0, sleep);
+            DatagramPacket dataPacket = new DatagramPacket(buf, length, address, port);
+            socket.send(dataPacket);
+        }
+        return false;
     }
 
-    private void receiveAck() throws IOException {
+    private boolean receiveAck() throws IOException {
         DatagramPacket ackPacket = new DatagramPacket(buf, 0, 6);
         socket.receive(ackPacket);
-        manager.processAck(Arrays.copyOf(ackPacket.getData(), ackPacket.getLength()));
         transmissionAttempts = 0;
+        return manager.processAck(Arrays.copyOf(ackPacket.getData(), ackPacket.getLength()));
     }
 
     private boolean invalidFileName(String fileName) {

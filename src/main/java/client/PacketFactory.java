@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 public class PacketFactory {
     private final short transmissionId;
@@ -20,29 +21,85 @@ public class PacketFactory {
 
     private InputStream dataStream;
     private final int dataPacketSize;
+    private final byte[][] window;
+    private int currentWindowIndex;
+    private int currentAck;
 
 
-    private PacketFactory(short transmissionId, String filePath, int dataPacketSize) {
+    private PacketFactory(short transmissionId, String filePath, int dataPacketSize, int windowSize) {
         String[] components = filePath.split("/");
         this.transmissionId = transmissionId;
         currentSequenceNumber = 0;
         this.filePath = filePath;
         this.dataPacketSize = dataPacketSize;
-        this.fileName = components[components.length -1];
+        this.fileName = components[components.length-1];
+        this.window = new byte[windowSize][];
+        currentAck = -1;
+        currentWindowIndex = 0;
     }
 
-    public static PacketFactory getInstance(short transmissionId, String filePath, int dataPacketSize)
+    public static PacketFactory getInstance(short transmissionId, String filePath, int dataPacketSize, int windowSize)
             throws IOException, NoSuchAlgorithmException {
         PacketFactory newFactory = new PacketFactory(
                 transmissionId,
                 filePath,
-                dataPacketSize
+                dataPacketSize,
+                windowSize
         );
         newFactory.setStreamMaxSequenceAndMd5();
+        newFactory.loadNextWindow();
         return newFactory;
     }
 
-    public byte[] getPacket() throws IOException{
+    public byte[] getPacketFromWindow() {
+        if (currentWindowIndex >= window.length) {
+            loadNextWindow();
+        }
+        if(window[currentWindowIndex] == null)
+            return new byte[0];
+        return window[currentWindowIndex++];
+    }
+
+    public void loadNextWindow() {
+        try{
+            Arrays.fill(window, null);
+            for(int i = 0; i < window.length; i++) {
+                window[i] = getPacket();
+            }
+        } catch (IOException ignore) {}
+        currentWindowIndex = 0;
+    }
+
+    private void shiftWindow(int amount) {
+        int firstNullIndex = 0;
+        try {
+            for(int i = amount; i < window.length; i++) {
+                window[i - amount] = window[i];
+            }
+            for(int i = window.length - amount; i < window.length; i++) {
+                firstNullIndex = i;
+                window[i] = getPacket();
+            }
+        } catch (IOException e) {
+            Arrays.fill(window, firstNullIndex, window.length, null);
+        }
+        currentWindowIndex = 0;
+    }
+
+    public void resetCurrentWindowIndex() {
+        currentWindowIndex = 0;
+    }
+
+    public boolean processAck(int ackSequenceNumber) {
+        int shiftamount = ackSequenceNumber - currentAck;
+        if(shiftamount >= 0) {
+            shiftWindow(ackSequenceNumber - currentAck);
+            currentAck = ackSequenceNumber;
+        }
+        return currentAck == maxSequenceNumber;
+    }
+
+    private byte[] getPacket() throws IOException{
         try {
             byte[] bytes;
             if (currentSequenceNumber > maxSequenceNumber) {
@@ -79,7 +136,7 @@ public class PacketFactory {
         }
     }
 
-    public void setStreamMaxSequenceAndMd5() throws IOException, NoSuchAlgorithmException {
+    private void setStreamMaxSequenceAndMd5() throws IOException, NoSuchAlgorithmException {
         dataStream = new FileInputStream(filePath);
 
         Path path = Paths.get(filePath);
@@ -92,9 +149,5 @@ public class PacketFactory {
 
     public short getTransmissionId() {
         return transmissionId;
-    }
-
-    public int getExpectedAckSequenceNr() {
-        return currentSequenceNumber - 1;
     }
 }
